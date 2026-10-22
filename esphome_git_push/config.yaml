@@ -1,5 +1,5 @@
 name: ESPHome Git Push
-version: "1.0.4"
+version: "1.0.5"
 slug: esphome_git_push
 description: Pushes the ESPHome Device Builder git history (/config/esphome) to a private GitHub repository, with secrets.yaml encrypted.
 url: https://github.com/willrnsantana/ha-esphome-git-push

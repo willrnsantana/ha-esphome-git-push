@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.5
+
+- A push that hangs (e.g. GitHub not answering the SSH connection) now times out
+  after 120 s and counts as a failed attempt, instead of freezing the app.
+- SSH connect timeout (20 s) and keep-alive.
+
 ## 1.0.4
 
 - `script.*` entries in `notify_services` are started with `script.turn_on`

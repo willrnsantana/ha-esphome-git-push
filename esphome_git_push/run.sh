@@ -106,7 +106,7 @@ setup_ssh() {
     fi
     # GitHub's published host key (https://api.github.com/meta), pinned.
     echo "github.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl" > "${KNOWN}"
-    export GIT_SSH_COMMAND="ssh -i ${KEY} -o IdentitiesOnly=yes -o UserKnownHostsFile=${KNOWN} -o StrictHostKeyChecking=yes"
+    export GIT_SSH_COMMAND="ssh -i ${KEY} -o IdentitiesOnly=yes -o UserKnownHostsFile=${KNOWN} -o StrictHostKeyChecking=yes -o BatchMode=yes -o ConnectTimeout=20 -o ServerAliveInterval=15 -o ServerAliveCountMax=2"
     bashio::log.info "App public key (add it as a Deploy key with write access to the repository):"
     bashio::log.info "$(cat "${KEY}.pub")"
 }
@@ -158,7 +158,8 @@ push() {
     fi
     local output attempt total=$((RETRIES + 1))
     for attempt in $(seq 1 "${total}"); do
-        if output="$(git_esp push "${REPO}" "HEAD:refs/heads/${BRANCH}" 2>&1)"; then
+        # timeout: a hung connection counts as a failed attempt instead of freezing the app.
+        if output="$(timeout 120 git -c safe.directory='*' -c core.fileMode=false -C "${ESP_DIR}" push "${REPO}" "HEAD:refs/heads/${BRANCH}" 2>&1)"; then
             bashio::log.info "Pushed to ${REPO} (${BRANCH}): $(git_esp log -1 --format='%h %s')"
             clear_failure
             return 0
