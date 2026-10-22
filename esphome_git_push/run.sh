@@ -4,9 +4,14 @@
 # - Every new Device Builder commit is pushed right away (inotify on .git/logs).
 # - Every N minutes, changes made outside the Builder are committed and pushed.
 # - secrets.yaml is pushed only as secrets.yaml.gpg (AES256, password in options).
-# - A failed push raises a persistent notification in Home Assistant.
+# - A failed push is retried push_retries times. If every attempt fails: a
+#   persistent notification, an esphome_git_push_failed event and, if enabled,
+#   the configured message sent to the chosen notify services (once per failure
+#   streak; cleared on the next successful push).
 
 set +e
+# Bash 5.2: keep '&' in error texts literal when filling message templates.
+shopt -u patsub_replacement 2>/dev/null
 
 ESP_DIR=/homeassistant/esphome
 SSH_DIR=/data/ssh
@@ -14,32 +19,74 @@ KEY="${SSH_DIR}/id_ed25519"
 KNOWN="${SSH_DIR}/known_hosts"
 LOCK=/tmp/esphome_git_push.lock
 NOTIF_ID=esphome_git_push_failure
+FAILING_FLAG=/data/failing
 
 REPO="$(bashio::config 'repository')"
 if [ "${REPO}" = "null" ]; then REPO=""; fi
 BRANCH="$(bashio::config 'branch')"
 INTERVAL="$(bashio::config 'interval_minutes')"
+RETRIES="$(bashio::config 'push_retries')"
+RETRY_DELAY="$(bashio::config 'retry_delay_seconds')"
 
 git_esp() {
     git -c safe.directory='*' -c core.fileMode=false -C "${ESP_DIR}" "$@"
 }
 
-notify() {
-    local title="$1" message="$2"
-    jq -n --arg t "${title}" --arg m "${message}" --arg id "${NOTIF_ID}" \
-        '{title: $t, message: $m, notification_id: $id}' \
-        | curl -s -o /dev/null -X POST \
-            -H "Authorization: Bearer ${SUPERVISOR_TOKEN}" \
-            -H "Content-Type: application/json" \
-            -d @- http://supervisor/core/api/services/persistent_notification/create
-}
-
-clear_notification() {
-    curl -s -o /dev/null -X POST \
+# POST to the Home Assistant Core API through the Supervisor proxy.
+ha_api() {
+    curl -s -o /dev/null -w '%{http_code}' -X POST \
         -H "Authorization: Bearer ${SUPERVISOR_TOKEN}" \
         -H "Content-Type: application/json" \
-        -d "{\"notification_id\": \"${NOTIF_ID}\"}" \
-        http://supervisor/core/api/services/persistent_notification/dismiss
+        -d @- "http://supervisor/core/api/$1"
+}
+
+# Replace {error}, {attempts} and {repository} in a user template.
+fill_template() {
+    local text="$1" error="$2" attempts="$3"
+    text="${text//\{error\}/${error}}"
+    text="${text//\{attempts\}/${attempts}}"
+    text="${text//\{repository\}/${REPO}}"
+    printf '%s' "${text}"
+}
+
+report_failure() {
+    local error="$1" attempts="$2" title message code service
+    title="$(fill_template "$(bashio::config 'failure_title')" "${error}" "${attempts}")"
+    message="$(fill_template "$(bashio::config 'failure_message')" "${error}" "${attempts}")"
+
+    jq -n --arg t "${title}" --arg m "${message}" --arg id "${NOTIF_ID}" \
+        '{title: $t, message: $m, notification_id: $id}' \
+        | ha_api services/persistent_notification/create > /dev/null
+    jq -n --arg e "${error}" --arg r "${REPO}" --argjson a "${attempts}" \
+        '{error: $e, repository: $r, attempts: $a}' \
+        | ha_api events/esphome_git_push_failed > /dev/null
+
+    # Device notifications: only once per failure streak.
+    if [ -f "${FAILING_FLAG}" ]; then return 0; fi
+    touch "${FAILING_FLAG}"
+    if ! bashio::config.true 'notify_on_failure'; then return 0; fi
+    for service in $(bashio::config 'notify_services'); do
+        if [[ "${service}" != *.* ]]; then
+            bashio::log.warning "Ignoring notify service '${service}': use domain.service, e.g. notify.mobile_app_my_phone"
+            continue
+        fi
+        code="$(jq -n --arg t "${title}" --arg m "${message}" '{title: $t, message: $m}' \
+            | ha_api "services/${service%%.*}/${service#*.}")"
+        if [ "${code}" = "200" ]; then
+            bashio::log.info "Failure notice sent via ${service}."
+        else
+            bashio::log.error "Could not call ${service} (HTTP ${code})."
+        fi
+    done
+}
+
+clear_failure() {
+    if [ -f "${FAILING_FLAG}" ]; then
+        rm -f "${FAILING_FLAG}"
+        jq -n --arg id "${NOTIF_ID}" '{notification_id: $id}' \
+            | ha_api services/persistent_notification/dismiss > /dev/null
+        bashio::log.info "Push working again."
+    fi
 }
 
 setup_ssh() {
@@ -101,15 +148,18 @@ push() {
         bashio::log.warning "Option 'repository' is empty: nothing pushed. E.g. git@github.com:USER/esphome-configs.git"
         return 0
     fi
-    local output
-    if output="$(git_esp push "${REPO}" "HEAD:refs/heads/${BRANCH}" 2>&1)"; then
-        bashio::log.info "Pushed to ${REPO} (${BRANCH}): $(git_esp log -1 --format='%h %s')"
-        clear_notification
-    else
-        bashio::log.error "Push failed: ${output}"
-        notify "ESPHome Git Push: push failed" \
-            "The ESPHome YAML files were not pushed to GitHub. Details: ${output}"
-    fi
+    local output attempt total=$((RETRIES + 1))
+    for attempt in $(seq 1 "${total}"); do
+        if output="$(git_esp push "${REPO}" "HEAD:refs/heads/${BRANCH}" 2>&1)"; then
+            bashio::log.info "Pushed to ${REPO} (${BRANCH}): $(git_esp log -1 --format='%h %s')"
+            clear_failure
+            return 0
+        fi
+        bashio::log.warning "Push attempt ${attempt}/${total} failed: ${output}"
+        if [ "${attempt}" -lt "${total}" ]; then sleep "${RETRY_DELAY}"; fi
+    done
+    bashio::log.error "Push failed after ${total} attempts."
+    report_failure "${output}" "${total}"
 }
 
 cycle() {

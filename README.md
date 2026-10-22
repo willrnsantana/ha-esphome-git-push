@@ -7,7 +7,7 @@ your device configs survive the loss of the Home Assistant machine.
 - Immediate push after every save in the Device Builder.
 - Periodic safety net for files changed outside the Builder.
 - `secrets.yaml` pushed only encrypted (`secrets.yaml.gpg`, AES256).
-- Notification in Home Assistant when a push fails.
+- Retries failed pushes; optional failure notice to the devices and with the text you choose.
 - Dedicated SSH deploy key, scoped to one repository.
 
 ## Install

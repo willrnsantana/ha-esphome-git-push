@@ -11,3 +11,21 @@ configuration:
   interval_minutes:
     name: Safety-net interval (minutes)
     description: How often to commit and push changes made outside the Device Builder (Samba, File editor, packages).
+  push_retries:
+    name: Push retries
+    description: Extra attempts after a failed push before reporting the failure (0 = report on the first failure).
+  retry_delay_seconds:
+    name: Delay between retries (seconds)
+    description: Wait between push attempts.
+  notify_on_failure:
+    name: Notify devices on failure
+    description: After all attempts fail, send the message below to the services listed in Notify services. A persistent notification and an esphome_git_push_failed event are always created.
+  notify_services:
+    name: Notify services
+    description: One action per line, as domain.service, e.g. notify.mobile_app_my_phone or script.my_notify_script (receives title and message). Sent once per failure streak.
+  failure_title:
+    name: Failure title
+    description: Title of the failure notice. Placeholders - {repository}, {attempts}, {error}.
+  failure_message:
+    name: Failure message
+    description: Text of the failure notice. Placeholders - {repository}, {attempts}, {error}.

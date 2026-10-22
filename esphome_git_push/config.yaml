@@ -1,5 +1,5 @@
 name: ESPHome Git Push
-version: "1.0.2"
+version: "1.0.3"
 slug: esphome_git_push
 description: Pushes the ESPHome Device Builder git history (/config/esphome) to a private GitHub repository, with secrets.yaml encrypted.
 url: https://github.com/willrnsantana/ha-esphome-git-push
@@ -18,8 +18,21 @@ options:
   branch: main
   secrets_password: ""
   interval_minutes: 60
+  push_retries: 3
+  retry_delay_seconds: 30
+  notify_on_failure: false
+  notify_services: []
+  failure_title: "ESPHome Git Push: push failed"
+  failure_message: "The ESPHome YAML files were not pushed to {repository} after {attempts} attempts. Error: {error}"
 schema:
   repository: str?
   branch: str
   secrets_password: password?
   interval_minutes: int(10,1440)
+  push_retries: int(0,10)
+  retry_delay_seconds: int(5,600)
+  notify_on_failure: bool
+  notify_services:
+    - str
+  failure_title: str
+  failure_message: str
