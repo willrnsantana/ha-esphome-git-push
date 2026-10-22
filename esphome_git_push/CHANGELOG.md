@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.2
+
+- Changing `secrets_password` now re-encrypts `secrets.yaml.gpg` on the next
+  start. Before, the file was only re-encrypted when `secrets.yaml` itself changed.
+
 ## 1.0.1
 
 - A single save in the Device Builder no longer triggers two pushes: events

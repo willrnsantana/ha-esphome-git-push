@@ -66,9 +66,10 @@ encrypt_secrets() {
         return 0
     fi
     local current_hash saved_hash=""
-    current_hash="$(sha256sum "${source}" | cut -d' ' -f1)"
+    # Fingerprint of content + password: changing either one re-encrypts.
+    current_hash="$({ cat "${source}"; printf '%s' "${password}"; } | sha256sum | cut -d' ' -f1)"
     if [ -f /data/secrets.sha256 ]; then saved_hash="$(cat /data/secrets.sha256)"; fi
-    # Re-encrypt only when the content changes (every encryption produces new bytes).
+    # Re-encrypt only when content or password change (every encryption produces new bytes).
     if [ "${current_hash}" != "${saved_hash}" ] || [ ! -f "${target}" ]; then
         if printf '%s' "${password}" | gpg --batch --yes --quiet --pinentry-mode loopback \
             --passphrase-fd 0 --symmetric --cipher-algo AES256 -o "${target}" "${source}"; then
