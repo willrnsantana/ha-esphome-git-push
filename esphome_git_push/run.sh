@@ -140,5 +140,8 @@ cycle safety
 inotifywait -m -q -e close_write,moved_to,modify --format '%f' "${ESP_DIR}/.git/logs" | while read -r file; do
     if [ "${file}" != "HEAD" ]; then continue; fi
     sleep 15
+    # One save fires several events (modify + close_write): drop the ones queued
+    # during the wait so a burst of events becomes a single push.
+    while read -r -t 1 _; do :; done
     cycle push
 done
