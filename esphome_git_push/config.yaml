@@ -1,0 +1,25 @@
+name: ESPHome Git Push
+version: "1.0.0"
+slug: esphome_git_push
+description: Pushes the ESPHome Device Builder git history (/config/esphome) to a private GitHub repository, with secrets.yaml encrypted.
+url: https://github.com/willrnsantana/ha-esphome-git-push
+arch:
+  - amd64
+  - aarch64
+init: false
+startup: application
+boot: auto
+homeassistant_api: true
+map:
+  - type: homeassistant_config
+    read_only: false
+options:
+  repository: ""
+  branch: main
+  secrets_password: ""
+  interval_minutes: 60
+schema:
+  repository: str?
+  branch: str
+  secrets_password: password?
+  interval_minutes: int(10,1440)

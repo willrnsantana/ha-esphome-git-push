@@ -1,0 +1,13 @@
+configuration:
+  repository:
+    name: Repository
+    description: SSH URL of an empty private GitHub repository, e.g. git@github.com:USER/esphome-configs.git
+  branch:
+    name: Branch
+    description: Remote branch to push to.
+  secrets_password:
+    name: Secrets password
+    description: Password used to encrypt secrets.yaml into secrets.yaml.gpg (AES256). Keep it in your password manager; without it the file cannot be read. Leave empty to not push secrets.
+  interval_minutes:
+    name: Safety-net interval (minutes)
+    description: How often to commit and push changes made outside the Device Builder (Samba, File editor, packages).
