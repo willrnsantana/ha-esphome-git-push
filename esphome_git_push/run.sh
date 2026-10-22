@@ -34,7 +34,7 @@ git_esp() {
 
 # POST to the Home Assistant Core API through the Supervisor proxy.
 ha_api() {
-    curl -s -o /dev/null -w '%{http_code}' -X POST \
+    curl -s -m 30 -o /dev/null -w '%{http_code}' -X POST \
         -H "Authorization: Bearer ${SUPERVISOR_TOKEN}" \
         -H "Content-Type: application/json" \
         -d @- "http://supervisor/core/api/$1"
@@ -70,8 +70,16 @@ report_failure() {
             bashio::log.warning "Ignoring notify service '${service}': use domain.service, e.g. notify.mobile_app_my_phone"
             continue
         fi
-        code="$(jq -n --arg t "${title}" --arg m "${message}" '{title: $t, message: $m}' \
-            | ha_api "services/${service%%.*}/${service#*.}")"
+        if [ "${service%%.*}" = "script" ]; then
+            # Start scripts without waiting for them to finish (a calling script
+            # service blocks until the script ends).
+            code="$(jq -n --arg e "${service}" --arg t "${title}" --arg m "${message}" \
+                '{entity_id: $e, variables: {title: $t, message: $m}}' \
+                | ha_api services/script/turn_on)"
+        else
+            code="$(jq -n --arg t "${title}" --arg m "${message}" '{title: $t, message: $m}' \
+                | ha_api "services/${service%%.*}/${service#*.}")"
+        fi
         if [ "${code}" = "200" ]; then
             bashio::log.info "Failure notice sent via ${service}."
         else

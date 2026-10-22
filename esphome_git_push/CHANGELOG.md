@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.4
+
+- `script.*` entries in `notify_services` are started with `script.turn_on`
+  (title and message as variables) so a long script never blocks the app.
+- 30 s timeout on calls to Home Assistant.
+
 ## 1.0.3
 
 - Failed pushes are retried (`push_retries`, default 3; `retry_delay_seconds`,
