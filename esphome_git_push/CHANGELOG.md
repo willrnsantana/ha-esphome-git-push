@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.1.1
+
+- The approval notice links to the GitHub App install page (new placeholder
+  `{install_url}`).
+- When GitHub refuses the push because the GitHub App is not installed on the
+  repository, the failure notice says so and gives the install link.
+
 ## 1.1.0
 
 - **GitHub App authentication (new default, `auth: github_app`)**: approve a code

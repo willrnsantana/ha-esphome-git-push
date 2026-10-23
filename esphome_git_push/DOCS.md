@@ -70,7 +70,7 @@ gpg -d -o esphome/secrets.yaml esphome/secrets.yaml.gpg
 | `notify_on_failure` | false | Send a notice to devices after all attempts fail |
 | `notify_services` | (empty) | Actions to call, one per line: `notify.mobile_app_my_phone`, `script.my_script` |
 | `failure_title` / `failure_message` | English text | Placeholders `{repository}`, `{attempts}`, `{error}` |
-| `approval_title` / `approval_message` | English text | Placeholders `{code}`, `{url}`, `{repository}` |
+| `approval_title` / `approval_message` | English text | Placeholders `{code}`, `{url}`, `{repository}`, `{install_url}` |
 
 Each service is called with `title` and `message`; `script.*` entries are started
 with `script.turn_on` and receive both as variables. Failure notices go out once

@@ -35,6 +35,13 @@ RETRIES="$(bashio::config 'push_retries')"
 RETRY_DELAY="$(bashio::config 'retry_delay_seconds')"
 AUTH="$(bashio::config 'auth')"
 CLIENT_ID="$(bashio::config 'github_app_client_id')"
+# Install page of the public ESPHome Git Push GitHub App (default client ID).
+DEFAULT_CLIENT_ID=Iv23liKLQWIKK4ZMEqeJ
+if [ "${CLIENT_ID}" = "${DEFAULT_CLIENT_ID}" ]; then
+    INSTALL_URL="https://github.com/apps/esphome-git-push-for-ha/installations/new"
+else
+    INSTALL_URL="the install page of your GitHub App"
+fi
 
 # Accept owner/repo, https://github.com/owner/repo(.git) or git@github.com:owner/repo(.git).
 SLUG="${REPO_OPT}"
@@ -161,8 +168,8 @@ device_flow() {
         expires_in="$(echo "${answer}" | jq -r '.expires_in // 900')"
         deadline=$(( $(date +%s) + expires_in ))
 
-        title="$(fill_template "$(bashio::config 'approval_title')" "code=${user_code}" "url=${uri}")"
-        message="$(fill_template "$(bashio::config 'approval_message')" "code=${user_code}" "url=${uri}")"
+        title="$(fill_template "$(bashio::config 'approval_title')" "code=${user_code}" "url=${uri}" "install_url=${INSTALL_URL}")"
+        message="$(fill_template "$(bashio::config 'approval_message')" "code=${user_code}" "url=${uri}" "install_url=${INSTALL_URL}")"
         bashio::log.info "GitHub authorization needed: open ${uri} and enter the code ${user_code}"
         persistent_notification "${AUTH_NOTIF_ID}" "${title}" "${message}"
         notify_devices "${title}" "${message}"
@@ -348,6 +355,9 @@ push() {
         if [ "${attempt}" -lt "${total}" ]; then sleep "${RETRY_DELAY}"; fi
     done
     bashio::log.error "Push failed after ${total} attempts."
+    if [ "${AUTH}" != "ssh" ] && [[ "${output}" == *"Write access to repository not granted"* || "${output}" == *"Repository not found"* ]]; then
+        output="The GitHub App has no access to ${REPO}. Install it on this repository: ${INSTALL_URL} (GitHub said: ${output})"
+    fi
     report_failure "${output}" "${total}"
 }
 

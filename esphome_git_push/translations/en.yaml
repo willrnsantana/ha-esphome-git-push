@@ -40,7 +40,7 @@ configuration:
     description: Text of the failure notice. Placeholders - {repository}, {attempts}, {error}.
   approval_title:
     name: Approval title
-    description: Title of the notice asking you to approve GitHub access. Placeholders - {code}, {url}, {repository}.
+    description: Title of the notice asking you to approve GitHub access. Placeholders - {code}, {url}, {repository}, {install_url}.
   approval_message:
     name: Approval message
-    description: Text of that notice, sent to the persistent notifications and to the Notify services. Placeholders - {code}, {url}, {repository}.
+    description: Text of that notice, sent to the persistent notifications and to the Notify services. Placeholders - {code}, {url}, {repository}, {install_url}.
