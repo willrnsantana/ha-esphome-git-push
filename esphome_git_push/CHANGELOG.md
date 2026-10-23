@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.1.0
+
+- **GitHub App authentication (new default, `auth: github_app`)**: approve a code
+  once at github.com/login/device; no SSH key or token to store. The code is sent
+  to the persistent notifications and to `notify_services`. Access renews by
+  itself (8 h tokens, 6-month refresh).
+  To keep using a deploy key, set `auth: ssh`.
+- **Restore on an empty install (`restore_if_empty`, default on)**: when
+  `/config/esphome` has no repository and no YAML, the app clones the repository
+  back with its full history and decrypts `secrets.yaml`. It never touches a
+  folder that already has YAML files.
+- `repository` accepts `USER/REPOSITORY` as well as https and git@ URLs.
+- The app now enforces the Device Builder's never-commit list (state files,
+  peer keys, build output) plus `secrets.yaml` in `.git/info/exclude`.
+- New options `approval_title` / `approval_message` with `{code}` and `{url}`.
+
 ## 1.0.5
 
 - A push that hangs (e.g. GitHub not answering the SSH connection) now times out

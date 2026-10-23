@@ -8,7 +8,8 @@ your device configs survive the loss of the Home Assistant machine.
 - Periodic safety net for files changed outside the Builder.
 - `secrets.yaml` pushed only encrypted (`secrets.yaml.gpg`, AES256).
 - Retries failed pushes; optional failure notice to the devices and with the text you choose.
-- Dedicated SSH deploy key, scoped to one repository.
+- Approve GitHub access once with a code (GitHub App, contents only), or use an SSH deploy key.
+- Restores everything, with history, on an empty install.
 
 ## Install
 

@@ -1,7 +1,16 @@
 configuration:
   repository:
     name: Repository
-    description: SSH URL of an empty private GitHub repository, e.g. git@github.com:USER/esphome-configs.git
+    description: Private GitHub repository, as USER/REPOSITORY (an https or git@ URL also works). Create it empty.
+  auth:
+    name: Authentication
+    description: github_app = approve a code once (no key or token to store; access renews by itself). ssh = classic deploy key shown in the log.
+  github_app_client_id:
+    name: GitHub App client ID
+    description: Client ID of the GitHub App used for github_app authentication. The default is the public ESPHome Git Push app; install it on your repository first.
+  restore_if_empty:
+    name: Restore on an empty install
+    description: If /config/esphome has no repository and no YAML, clone the repository back (full history) and decrypt secrets.yaml with the secrets password.
   branch:
     name: Branch
     description: Remote branch to push to.
@@ -29,3 +38,9 @@ configuration:
   failure_message:
     name: Failure message
     description: Text of the failure notice. Placeholders - {repository}, {attempts}, {error}.
+  approval_title:
+    name: Approval title
+    description: Title of the notice asking you to approve GitHub access. Placeholders - {code}, {url}, {repository}.
+  approval_message:
+    name: Approval message
+    description: Text of that notice, sent to the persistent notifications and to the Notify services. Placeholders - {code}, {url}, {repository}.
